@@ -72,7 +72,7 @@ export default class Burn {
         }
     }
 
-    private logar(log: any){
+    private logar(log: any) {
         if (!this.debug) return
         console.log(log)
     }
@@ -89,6 +89,12 @@ export default class Burn {
         ]);
         const cards =
             await page.evaluate(() => {
+                const formatStringToDateString = (date?: string): string => {
+                    if (!date) return 'unknown'
+                    if (date === '--') return date
+                    if (date.includes('/')) return date.split(' ')[0]
+                    return new Date(Date.parse(date)).toISOString()
+                }
                 const cardsElements = document.getElementsByClassName("com-ibm-team-apt-web-ui-internal-common-viewer-plan-board-TaskNote");
                 let cards: ICard[] = new Array<ICard>();
                 for (let item = 0; item < cardsElements.length; item++) {
@@ -96,7 +102,7 @@ export default class Burn {
                     cards.push({
                         storyPoints: + (element.querySelector('[id*="EnumerationGadget"]')?.textContent ?? 0),
                         status: element.querySelector('[id*="StateGadget"]')?.textContent ?? 'Unknown',
-                        resolutionDate: element.querySelector('[id*="DateGadget"]')?.textContent?.split(' ')[0] ?? 'Unknown'
+                        resolutionDate: formatStringToDateString(element.querySelector('[id*="DateGadget"]')?.textContent ?? undefined)
                     })
                 }
                 return cards
@@ -113,7 +119,7 @@ export default class Burn {
         return this.calcularIdeal(burnUp)
     }
 
-    calcularTotalDias(burnUp: IBurnUp[]) {
+    private calcularTotalDias(burnUp: IBurnUp[]) {
         this.totalDias = burnUp.reduce((acc, item) => item.fds ? acc : acc + 1, 0)
     }
 
