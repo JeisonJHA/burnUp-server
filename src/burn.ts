@@ -35,6 +35,7 @@ export default class Burn {
 
     constructor(
         private RTC_URL: string,
+        private debug: boolean,
     ) {
     }
     public async getDados(data: IDadosBurn) {
@@ -63,11 +64,17 @@ export default class Burn {
                     return acc.set(card.resolutionDate, total)
                 }, new Map<string, IStories>())
 
+            this.logar(total)
             burnUp = this.montarBurnUp(burnUp, total)
             return burnUp
         } catch (error) {
             console.log(error);
         }
+    }
+
+    private logar(log: any){
+        if (!this.debug) return
+        console.log(log)
     }
 
     async pegarCards(usuario: string, senha: string): Promise<ICard[]> {
@@ -95,6 +102,7 @@ export default class Burn {
                 return cards
             });
         await browser.close();
+        this.logar(cards)
         return cards
     }
 
@@ -107,16 +115,11 @@ export default class Burn {
 
     calcularTotalDias(burnUp: IBurnUp[]) {
         this.totalDias = burnUp.reduce((acc, item) => item.fds ? acc : acc + 1, 0)
-        console.log('totalDias', this.totalDias)
     }
 
     private calcularIdeal(burnUp: IBurnUp[]) {
         const totalStories = this.totalStories;
         const totalDias = this.totalDias;
-        console.log(totalStories)
-        console.log(this.totalStories)
-        console.log(totalDias)
-        console.log(this.totalDias)
         let count = 0
         return burnUp.map(element => {
             if (element.fds) return element
@@ -132,6 +135,7 @@ export default class Burn {
             if (!story) return { ...item, dia_feito: 0, total_feito: 0 };
             return { ...item, dia_feito: story.day, total_feito: story.sum }
         })
+        this.logar(burnUp)
         burnUp = this.calcularDebito(burnUp)
         return this.calcularBurndown(burnUp)
     }

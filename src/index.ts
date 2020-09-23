@@ -12,9 +12,8 @@ app.use(express.json())
 app.use(express.json());
 
 app.get('/', async (req, res) => {
-  const { usuario, senha, inicio, fim, url } = req.query;
-  console.log(req.query)
-  const burn = new Burn(String(url))
+  const { usuario, senha, inicio, fim, url, debug } = req.query;
+  const burn = new Burn(String(url), Boolean(debug))
   const dados = await burn.getDados({ usuario, senha, inicio: parseISO(String(inicio)), fim: parseISO(String(fim)) } as IDadosBurn)
   return res.json(dados)
 })
