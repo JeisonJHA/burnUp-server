@@ -93,7 +93,7 @@ export default class Burn {
                     if (!date) return 'unknown'
                     if (date === '--') return date
                     if (date.includes('/')) return date.split(' ')[0]
-                    return new Date(Date.parse(date)).toISOString()
+                    return format(new Date(Date.parse(date)), 'dd/MM/yyyy')
                 }
                 const cardsElements = document.getElementsByClassName("com-ibm-team-apt-web-ui-internal-common-viewer-plan-board-TaskNote");
                 let cards: ICard[] = new Array<ICard>();
