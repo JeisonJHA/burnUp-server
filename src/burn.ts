@@ -71,7 +71,7 @@ export default class Burn {
     }
 
     async pegarCards(usuario: string, senha: string): Promise<ICard[]> {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
         const page = await browser.newPage();
         await page.goto(this.RTC_URL, { waitUntil: 'networkidle0' });
         await page.type('input[name="j_username"]', usuario);
