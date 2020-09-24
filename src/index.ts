@@ -19,6 +19,9 @@ app.get('/', async (req, res) => {
   }
   const burn = new Burn(String(url), Boolean(debug))
   const dados = await burn.getDados({ usuario, senha, inicio: parseISO(String(inicio)), fim: parseISO(String(fim)) } as IDadosBurn)
+  if (debug) {
+    console.timeEnd("burnup")
+  }
   return res.json(dados)
 })
 
