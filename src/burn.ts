@@ -115,7 +115,7 @@ export default class Burn {
     private formatStringToDateString(date?: string): Date | null {
         if (!date || date === '--') return null
         if (date.includes('/')) return parse(date, 'dd/MM/yyyy HH:mm:ss', new Date())
-        return parse(date, 'LLL dd, yyyy HH:mm:ss', new Date())
+        return parse(date, 'LLL dd, yyyy, hh:mm:ss a', new Date())
     }
 
     private inicializarDadosBurnUp(start: Date, end: Date) {
