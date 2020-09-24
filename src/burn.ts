@@ -1,14 +1,15 @@
 import puppeteer from 'puppeteer';
-import { eachDayOfInterval, isWeekend, format } from 'date-fns'
+import { eachDayOfInterval, isWeekend, parse, isSameDay, isAfter } from 'date-fns'
 
 interface ICard {
     storyPoints: number
     status: string
-    resolutionDate: string
+    resolutionDate?: Date | null
+    resolutionDateString: string
 }
 
 interface IBurnUp {
-    date: string
+    date: Date
     fds: boolean
     ideal: number
     total_feito: number
@@ -51,29 +52,34 @@ export default class Burn {
                 .filter((card) => card.status === 'Pronto')
                 .sort(this.compare)
                 .reduce((acc, card, _, array) => {
-                    const story = acc.get(card.resolutionDate)
+                    if (!card.resolutionDate) return acc.set(new Date().toDateString(), {} as IStories)
+                    const story = acc.get(card.resolutionDate.toDateString())
                     if (story) {
-                        return acc.set(card.resolutionDate, story)
+                        return acc.set(card.resolutionDate.toDateString(), story)
                     }
                     let total = array.reduce((acc, current) => {
-                        return {
-                            day: current.resolutionDate === card.resolutionDate ? acc.day + current.storyPoints : acc.day,
-                            sum: current.resolutionDate <= card.resolutionDate ? acc.sum + current.storyPoints : acc.sum
+                        let sum = acc.sum
+                        let day = acc.day
+                        if (current.resolutionDate && card.resolutionDate) {
+                            day = isSameDay(current.resolutionDate, card.resolutionDate) ? acc.day + current.storyPoints : acc.day
+                            sum = isAfter(card.resolutionDate, current.resolutionDate) ? acc.sum + current.storyPoints : acc.sum
                         }
+                        return { day, sum }
                     }, { day: 0, sum: 0 } as IStories)
-                    return acc.set(card.resolutionDate, total)
+                    return acc.set(new Date(card.resolutionDate.setHours(0,0,0)).toDateString(), total)
                 }, new Map<string, IStories>())
 
-            this.logar(total)
+            this.logar(total, true)
             burnUp = this.montarBurnUp(burnUp, total)
             return burnUp
         } catch (error) {
             console.log(error);
+            throw Error(error);
         }
     }
 
-    private logar(log: any) {
-        if (!this.debug) return
+    private logar(log: any, enabled?: boolean) {
+        if (!this.debug || !enabled) return
         console.log(log)
     }
 
@@ -89,12 +95,6 @@ export default class Burn {
         ]);
         const cards =
             await page.evaluate(() => {
-                const formatStringToDateString = (date?: string): string => {
-                    if (!date) return 'unknown'
-                    if (date === '--') return date
-                    if (date.includes('/')) return date.split(' ')[0]
-                    return format(new Date(Date.parse(date)), 'dd/MM/yyyy')
-                }
                 const cardsElements = document.getElementsByClassName("com-ibm-team-apt-web-ui-internal-common-viewer-plan-board-TaskNote");
                 let cards: ICard[] = new Array<ICard>();
                 for (let item = 0; item < cardsElements.length; item++) {
@@ -102,19 +102,26 @@ export default class Burn {
                     cards.push({
                         storyPoints: + (element.querySelector('[id*="EnumerationGadget"]')?.textContent ?? 0),
                         status: element.querySelector('[id*="StateGadget"]')?.textContent ?? 'Unknown',
-                        resolutionDate: formatStringToDateString(element.querySelector('[id*="DateGadget"]')?.textContent ?? undefined)
+                        resolutionDateString: element.querySelector('[id*="DateGadget"]')?.textContent ?? 'Unknown'
                     })
                 }
                 return cards
             });
         await browser.close();
+
         this.logar(cards)
-        return cards
+        return cards.map((card) => ({ ...card, resolutionDate: this.formatStringToDateString(card.resolutionDateString) }))
+    }
+
+    private formatStringToDateString(date?: string): Date | null {
+        if (!date || date === '--') return null
+        if (date.includes('/')) return parse(date, 'dd/MM/yyyy HH:mm:ss', new Date())
+        return parse(date, 'LLL dd, yyyy HH:mm:ss', new Date())
     }
 
     private inicializarDadosBurnUp(start: Date, end: Date) {
         const dates = eachDayOfInterval({ start, end })
-        const burnUp = dates.map((date) => ({ date: format(date, 'dd/MM/yyyy'), fds: isWeekend(date) } as IBurnUp))
+        const burnUp = dates.map((date) => ({ date: date, fds: isWeekend(date) } as IBurnUp))
         this.calcularTotalDias(burnUp)
         return this.calcularIdeal(burnUp)
     }
@@ -136,7 +143,9 @@ export default class Burn {
 
     private montarBurnUp(burnUp: IBurnUp[], total: Map<string, IStories>) {
         burnUp = burnUp.map((item) => {
-            const story = total.get(item.date)
+            this.logar(item.date, true)
+            const story = total.get(item.date.toDateString())
+            this.logar(story, true)
             if (item.fds) return item
             if (!story) return { ...item, dia_feito: 0, total_feito: 0 };
             return { ...item, dia_feito: story.day, total_feito: story.sum }
@@ -166,8 +175,8 @@ export default class Burn {
     }
 
     private compare(a: ICard, b: ICard) {
-        const bandA = a.resolutionDate;
-        const bandB = b.resolutionDate;
+        const bandA = a.resolutionDate ?? 0;
+        const bandB = b.resolutionDate ?? 0;
 
         let comparison = 0;
         if (bandA > bandB) {
