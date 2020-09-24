@@ -69,17 +69,16 @@ export default class Burn {
                     return acc.set(new Date(card.resolutionDate.setHours(0,0,0)).toDateString(), total)
                 }, new Map<string, IStories>())
 
-            this.logar(total, true)
+            this.logar(total)
             burnUp = this.montarBurnUp(burnUp, total)
             return burnUp
         } catch (error) {
             console.log(error);
-            throw Error(error);
         }
     }
 
-    private logar(log: any, enabled?: boolean) {
-        if (!this.debug || !enabled) return
+    private logar(log: any) {
+        if (!this.debug) return
         console.log(log)
     }
 
@@ -143,9 +142,8 @@ export default class Burn {
 
     private montarBurnUp(burnUp: IBurnUp[], total: Map<string, IStories>) {
         burnUp = burnUp.map((item) => {
-            this.logar(item.date, true)
             const story = total.get(item.date.toDateString())
-            this.logar(story, true)
+            this.logar(story)
             if (item.fds) return item
             if (!story) return { ...item, dia_feito: 0, total_feito: 0 };
             return { ...item, dia_feito: story.day, total_feito: story.sum }
