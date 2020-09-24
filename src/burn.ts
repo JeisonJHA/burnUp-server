@@ -44,6 +44,7 @@ export default class Burn {
             const { inicio, fim, usuario, senha } = data;
 
             const cards = await this.pegarCards(usuario, senha)
+            this.logar("burnup", 'pegou os cards')
             this.totalStories = cards.reduce((acc, item) => item.storyPoints + acc, 0)
 
             let burnUp = this.inicializarDadosBurnUp(inicio, fim)
@@ -68,8 +69,7 @@ export default class Burn {
                     }, { day: 0, sum: 0 } as IStories)
                     return acc.set(new Date(card.resolutionDate.setHours(0,0,0)).toDateString(), total)
                 }, new Map<string, IStories>())
-
-            this.logar(total)
+            this.logar(total, 'pegou o total')
             burnUp = this.montarBurnUp(burnUp, total)
             return burnUp
         } catch (error) {
@@ -77,8 +77,9 @@ export default class Burn {
         }
     }
 
-    private logar(log: any) {
+    private logar(log: any, message: string = '') {
         if (!this.debug) return
+        console.timeLog("burnup", message)
         console.log(log)
     }
 
@@ -148,7 +149,7 @@ export default class Burn {
             if (!story) return { ...item, dia_feito: 0, total_feito: 0 };
             return { ...item, dia_feito: story.day, total_feito: story.sum }
         })
-        this.logar(burnUp)
+        this.logar(burnUp, 'montou o burnUp')
         burnUp = this.calcularDebito(burnUp)
         return this.calcularBurndown(burnUp)
     }

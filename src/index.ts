@@ -13,7 +13,10 @@ app.use(express.json());
 
 app.get('/', async (req, res) => {
   const { usuario, senha, inicio, fim, url, debug } = req.query;
-  if (debug) console.log('operação iniciada.')
+  if (debug) {
+    console.log('operação iniciada.')
+    console.time("burnup")
+  }
   const burn = new Burn(String(url), Boolean(debug))
   const dados = await burn.getDados({ usuario, senha, inicio: parseISO(String(inicio)), fim: parseISO(String(fim)) } as IDadosBurn)
   return res.json(dados)
