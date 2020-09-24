@@ -19,6 +19,8 @@ app.get('/', async (req, res) => {
   return res.json(dados)
 })
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
 })
+
+server.timeout = 90000
