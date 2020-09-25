@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import { eachDayOfInterval, isWeekend, parse, isSameDay, isAfter } from 'date-fns'
+import { eachDayOfInterval, isWeekend, parse, isSameDay, compareAsc } from 'date-fns'
 
 interface ICard {
     storyPoints: number
@@ -63,7 +63,7 @@ export default class Burn {
                         let day = acc.day
                         if (current.resolutionDate && card.resolutionDate) {
                             day = isSameDay(current.resolutionDate, card.resolutionDate) ? acc.day + current.storyPoints : acc.day
-                            sum = isAfter(card.resolutionDate, current.resolutionDate) ? acc.sum + current.storyPoints : acc.sum
+                            sum = compareAsc(card.resolutionDate, current.resolutionDate) >= 0 ? acc.sum + current.storyPoints : acc.sum
                         }
                         return { day, sum }
                     }, { day: 0, sum: 0 } as IStories)
